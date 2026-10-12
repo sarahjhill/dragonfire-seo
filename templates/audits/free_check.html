@@ -1,0 +1,70 @@
+{% extends "audits/base.html" %}
+{% block title %}Free website check — does Google take you seriously? | {{ agency }}{% endblock %}
+{% block content %}
+<div class="hero">
+  <p class="kicker">Free · 60 seconds · no catch</p>
+  <h1 class="display">How does your website <span class="fire-text">score?</span></h1>
+  <p class="lede">Put your website through 35+ checks: speed, Google, local search, and whether AI assistants like ChatGPT
+    can find you. You get your score straight away. {{ agency }} sends you the full report personally.</p>
+
+  <form method="post" class="card" id="torch-form" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert">{{ form.non_field_errors.0 }}</div>{% endif %}
+    <div class="big-input">
+      <label for="{{ form.website.id_for_label }}">{{ form.website.label }}</label>
+      {{ form.website }}
+      {% if form.website.errors %}<div class="alert">{{ form.website.errors.0 }}</div>{% endif %}
+    </div>
+    <div class="grid-form">
+      <div><label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>{{ form.name }}
+        {% if form.name.errors %}<div class="alert">{{ form.name.errors.0 }}</div>{% endif %}</div>
+      <div><label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>{{ form.email }}
+        {% if form.email.errors %}<div class="alert">{{ form.email.errors.0 }}</div>{% endif %}</div>
+      <div><label for="{{ form.business.id_for_label }}">{{ form.business.label }}</label>{{ form.business }}</div>
+      <div><label for="{{ form.service.id_for_label }}">{{ form.service.label }}</label>{{ form.service }}</div>
+      <div><label for="{{ form.town.id_for_label }}">{{ form.town.label }}</label>{{ form.town }}</div>
+    </div>
+    <div style="position:absolute;left:-9999px" aria-hidden="true">{{ form.company_url }}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between">
+      <div style="display:grid;gap:10px;max-width:56ch">
+        <label class="check">{{ form.consent }} {{ form.consent.label }}</label>
+        <label class="check">{{ form.tips }} {{ form.tips.label }}</label>
+      </div>
+      <button class="btn" type="submit">Score my website <span aria-hidden="true">🔥</span></button>
+    </div>
+    {% if form.consent.errors %}<div class="alert">Tick the box so we can send you your report.</div>{% endif %}
+    <p class="mute" style="font-size:13px;margin-top:16px">Your details are only used to send you this report and follow up on it.
+      They're never sold, and you only get tips emails if you tick that second box. Ask any time and they're deleted.</p>
+  </form>
+
+  <div class="chips" aria-label="What gets checked">
+    <span class="chip">Speed &amp; mobile</span><span class="chip">Google basics</span><span class="chip">Local search</span>
+    <span class="chip">AI search readiness</span><span class="chip">Schema</span><span class="chip">Broken links</span>
+  </div>
+</div>
+
+<div id="torching" role="status" aria-live="polite">
+  <div>
+    <svg class="flame" viewBox="0 0 120 160" aria-hidden="true">
+      <path fill="#ff3b1f" d="M60 6c8 26 46 40 46 92a46 46 0 0 1-92 0c0-28 16-40 22-62 5 16 14 22 14 22S44 34 60 6z"/>
+      <path fill="#ff6a1f" d="M60 52c6 18 30 28 30 56a30 30 0 0 1-60 0c0-16 10-24 13-38 3 9 9 13 9 13s-3-17 8-31z"/>
+      <path fill="#ffb020" d="M60 92c3 10 16 15 16 30a16 16 0 0 1-32 0c0-9 6-13 7-20 2 5 5 7 5 7s-2-9 4-17z"/>
+    </svg>
+    <p class="kicker">Checking your website</p>
+    <p class="line" id="torch-line">Knocking on the front door…</p>
+    <p class="mute" style="margin-top:10px">Usually under 30 seconds.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('torch-form').addEventListener('submit', function(){
+  var lines=["Knocking on the front door…","Reading your page titles…","Checking you work on a phone…",
+    "Looking for you on the map…","Seeing if ChatGPT can read you…","Counting the good bits…","Adding it all up…"];
+  var el=document.getElementById('torch-line'), i=0;
+  document.getElementById('torching').classList.add('on');
+  setInterval(function(){ i=(i+1)%lines.length; el.textContent=lines[i]; }, 2200);
+});
+</script>
+{% endblock %}

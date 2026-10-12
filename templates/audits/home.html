@@ -1,0 +1,73 @@
+{% extends "audits/base.html" %}
+{% block title %}Dragonfire SEO — does Google take you seriously?{% endblock %}
+{% block content %}
+<div class="hero">
+  <p class="kicker">SEO + AI search audit</p>
+  <h1 class="display">Does Google take you <span class="fire-text">seriously?</span></h1>
+  <p class="lede">Torch any website. See what survives. Technical, on-page, schema, local and AI search — scored, ranked and explained in plain English.</p>
+
+  <form method="post" class="card" id="torch-form" novalidate>
+    {% csrf_token %}
+    <div class="big-input">
+      <label for="{{ form.target.id_for_label }}">{{ form.target.label }}</label>
+      {{ form.target }}
+      {% if form.target.errors %}<div class="alert">{{ form.target.errors.0 }}</div>{% endif %}
+    </div>
+    <div class="grid-form">
+      <div><label for="{{ form.brand.id_for_label }}">{{ form.brand.label }}</label>{{ form.brand }}</div>
+      <div><label for="{{ form.service.id_for_label }}">{{ form.service.label }}</label>{{ form.service }}</div>
+      <div><label for="{{ form.towns.id_for_label }}">{{ form.towns.label }}</label>{{ form.towns }}</div>
+      <div><label for="{{ form.max_pages.id_for_label }}">{{ form.max_pages.label }}</label>{{ form.max_pages }}</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between">
+      <label class="check">{{ form.ai }} {{ form.ai.label }}
+        <span class="mute">({% if ai_ready %}{{ ai_ready|join:", " }} ready{% else %}add API keys in .env to switch on{% endif %})</span>
+      </label>
+      <button class="btn" type="submit">Torch it <span aria-hidden="true">🔥</span></button>
+    </div>
+  </form>
+
+  <div class="chips" aria-label="What gets checked">
+    <span class="chip">40+ checks</span><span class="chip">robots &amp; sitemaps</span><span class="chip">speed signals</span>
+    <span class="chip">schema</span><span class="chip">local SEO</span><span class="chip">AI crawlers</span><span class="chip">llms.txt</span>
+    <span class="chip">does ChatGPT know you?</span>
+  </div>
+</div>
+
+{% if recent %}
+<section>
+  <p class="kicker">Recently torched</p>
+  <div class="recent" style="margin-top:10px">
+    {% for a in recent %}
+    <a href="{% url 'audits:report' a.pk %}"><b>{{ a.domain|default:a.target }}</b><span class="mute">{{ a.score }} · {{ a.heat }} · {{ a.created|date:"j M" }}</span></a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div id="torching" role="status" aria-live="polite">
+  <div>
+    <svg class="flame" viewBox="0 0 120 160" aria-hidden="true">
+      <path fill="#ff3b1f" d="M60 6c8 26 46 40 46 92a46 46 0 0 1-92 0c0-28 16-40 22-62 5 16 14 22 14 22S44 34 60 6z"/>
+      <path fill="#ff6a1f" d="M60 52c6 18 30 28 30 56a30 30 0 0 1-60 0c0-16 10-24 13-38 3 9 9 13 9 13s-3-17 8-31z"/>
+      <path fill="#ffb020" d="M60 92c3 10 16 15 16 30a16 16 0 0 1-32 0c0-9 6-13 7-20 2 5 5 7 5 7s-2-9 4-17z"/>
+    </svg>
+    <p class="kicker">Torching</p>
+    <p class="line" id="torch-line">Knocking on robots.txt…</p>
+    <p class="mute" style="margin-top:10px">Usually 10–60 seconds. Longer if we're asking the AIs.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('torch-form').addEventListener('submit', function(){
+  var lines=["Knocking on robots.txt…","Unrolling your sitemap…","Counting your H1s…","Reading your schema…",
+    "Checking who's allowed in: GPTBot, ClaudeBot, PerplexityBot…","Weighing your images…",
+    "Looking for you on the map…","Asking the AIs if they've heard of you…","Writing it up. Bluntly."];
+  var el=document.getElementById('torch-line'), i=0;
+  document.getElementById('torching').classList.add('on');
+  setInterval(function(){ i=(i+1)%lines.length; el.textContent=lines[i]; }, 2200);
+});
+</script>
+{% endblock %}

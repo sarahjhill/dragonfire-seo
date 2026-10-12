@@ -1,0 +1,218 @@
+{% extends "audits/base.html" %}
+{% block title %}{{ r.domain }} scored {{ r.score }} — Dragonfire SEO report{% endblock %}
+{% block content %}
+
+{# ================= HEADER + SCORE ================= #}
+<div class="rep-head">
+  <p class="kicker">Dragonfire report</p>
+  <h1 class="display domain">{{ r.domain }}</h1>
+  <div class="meta-row">
+    {% if r.brand %}<span>For <b>{{ r.brand }}</b></span>{% endif %}
+    <span>Torched <b>{{ audit.created|date:"j F Y" }}</b></span>
+    <span><b>{{ r.pages|length }}</b> pages checked {% if r.mode == "folder" %}(from local files){% endif %}</span>
+    {% if r.towns %}<span>Targeting <b>{{ r.towns|join:", " }}</b></span>{% endif %}
+    <span>Prepared by <b>{{ agency }}</b></span>
+  </div>
+
+  <div class="scoreboard">
+    <div class="ring" role="img" aria-label="Score {{ r.score }} out of 100">
+      <svg viewBox="0 0 200 200">
+        <defs><linearGradient id="fire" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffb020"/><stop offset=".5" stop-color="#ff6a1f"/><stop offset="1" stop-color="#ff3b1f"/></linearGradient></defs>
+        <circle class="track" cx="100" cy="100" r="88" fill="none" stroke-width="16"/>
+        <circle id="ring-fill" cx="100" cy="100" r="88" fill="none" stroke="url(#fire)" stroke-width="16" stroke-linecap="round"
+                stroke-dasharray="{% widthratio r.score 100 553 %} 553" data-score="{{ r.score }}"/>
+      </svg>
+      <div class="num"><b id="score-num">{{ r.score }}</b><span>OUT OF 100</span></div>
+    </div>
+    <div>
+      <p class="kicker">Heat rating</p>
+      <h2 class="display heat fire-text">{{ r.heat }}</h2>
+      <p class="verdict">{{ r.verdict }}</p>
+      <div class="tally">
+        <span class="f">{{ r.counts.fail }} fix now</span>
+        <span class="w">{{ r.counts.warn }} fix soon</span>
+        <span class="p">{{ r.counts.pass }} nailed it</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ================= CATEGORIES ================= #}
+<section>
+  <div class="cats">
+    {% for key, c in r.categories.items %}
+    <a class="card cat" href="#cat-{{ key }}" style="text-decoration:none">
+      <div class="top"><h3>{{ c.label }}</h3><span class="s">{% if c.score is not None %}{{ c.score }}{% else %}—{% endif %}</span></div>
+      <div class="meter"><i style="width:{{ c.score|default:0 }}%"></i></div>
+      <p>{{ c.blurb }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+{# ================= FIX FIRST ================= #}
+{% if r.top_fixes %}
+<section>
+  <p class="kicker">Start here</p>
+  <h2 class="display section">Fix these <span class="fire-text">first</span></h2>
+  <p class="section-sub">Ranked by how much each one is costing you. Do these five and the score moves.</p>
+  <ol class="fixes">
+    {% for f in r.top_fixes %}
+    <li><div>
+      <span class="sev {{ f.severity }}">{% if f.severity == "fail" %}Fix now{% else %}Fix soon{% endif %}</span>
+      <h3 style="margin-top:10px">{{ f.title }}</h3>
+      <p>{{ f.detail }}{% if f.why %} {{ f.why }}{% endif %}</p>
+      {% if f.fix %}<p class="how">→ {{ f.fix|linebreaksbr }}</p>{% endif %}
+    </div></li>
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}
+
+{# ================= AI VISIBILITY ================= #}
+<section id="cat-visibility">
+  <p class="kicker">The new front page</p>
+  <h2 class="display section">Does AI <span class="fire-text">recommend you?</span></h2>
+  {% if r.ai.ran %}
+    <p class="section-sub">We asked {{ r.ai.providers|join:", " }} the questions your customers ask.
+      You came up in <b>{{ r.ai.hits }} of {{ r.ai.total }}</b> answers ({{ r.ai.share }}%).</p>
+    <div class="card scroll-x">
+      <table class="ai-table">
+        <thead><tr><th>Question</th>{% for p in r.ai.providers %}<th>{{ p }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for row in r.ai.results %}
+          <tr><td>{{ row.prompt }}</td>
+          {% for p, a in row.answers.items %}
+            <td>{% if a.error %}<span class="mute">error</span>
+                {% elif a.mentioned %}<span class="yes">✓ Named</span><br><span class="mute" style="font-size:13px">“…{{ a.snippet|truncatechars:160 }}…”</span>
+                {% else %}<span class="no">✗ Not named</span>{% endif %}</td>
+          {% endfor %}</tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if r.ai.competitors %}
+    <p class="section-sub" style="margin-top:22px">Sites the AIs named instead:
+      {% for d, n in r.ai.competitors %}<b>{{ d }}</b>{% if n > 1 %} ×{{ n }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    {% endif %}
+    <p class="mute" style="font-size:14px;margin-top:12px">Honest small print: ChatGPT and Claude via API answer from training data unless web search is on, so they lag behind. Perplexity searches live — treat it as the "right now" column.</p>
+  {% else %}
+    <div class="card locked">
+      <div>
+        <h3 style="font-size:22px;margin-bottom:6px">Not run this time.</h3>
+        <p class="mute">Add an OpenAI, Anthropic or Perplexity API key to <code>.env</code> and Dragonfire will ask each AI
+          “who's the best {{ r.service|default:"business like yours" }} in {{ r.towns.0|default:"your town" }}?” — and tell you if your name comes up.</p>
+      </div>
+      <span class="chip">{{ r.ai_providers_missing|join:" · " }}</span>
+    </div>
+  {% endif %}
+</section>
+
+{# ================= ALL FINDINGS ================= #}
+<section>
+  <p class="kicker">The full burn</p>
+  <h2 class="display section">Everything we found</h2>
+  <div class="filters" role="group" aria-label="Filter findings">
+    <button type="button" data-f="all" aria-pressed="true">All</button>
+    <button type="button" data-f="fail" aria-pressed="false">Fix now ({{ r.counts.fail }})</button>
+    <button type="button" data-f="warn" aria-pressed="false">Fix soon ({{ r.counts.warn }})</button>
+    <button type="button" data-f="pass" aria-pressed="false">Nailed it ({{ r.counts.pass }})</button>
+  </div>
+
+  {% for key, c in r.categories.items %}{% if key != "visibility" %}
+  <div class="cat-block" id="cat-{{ key }}">
+    <h3>{{ c.label }} <span>{% if c.score is not None %}{{ c.score }}/100{% endif %}</span></h3>
+    {% for f in r.findings %}{% if f.category == key %}
+    <details class="f" data-sev="{{ f.severity }}">
+      <summary>
+        <span class="sev {{ f.severity }}">{% if f.severity == "fail" %}Fix now{% elif f.severity == "warn" %}Fix soon{% elif f.severity == "pass" %}Nailed it{% else %}FYI{% endif %}</span>
+        <span>{{ f.title }}</span>
+      </summary>
+      <div class="f-body">
+        {% if f.detail %}<p>{{ f.detail }}</p>{% endif %}
+        {% if f.why %}<p class="why">{{ f.why }}</p>{% endif %}
+        {% if f.fix %}<pre>{{ f.fix }}</pre>{% endif %}
+        {% if f.pages %}<ul>{% for p in f.pages %}<li>{{ p }}</li>{% endfor %}{% if f.more_pages %}<li>…and {{ f.more_pages }} more</li>{% endif %}</ul>{% endif %}
+      </div>
+    </details>
+    {% endif %}{% endfor %}
+  </div>
+  {% endif %}{% endfor %}
+</section>
+
+{# ================= FREE STUFF ================= #}
+<section>
+  <p class="kicker">Done for you</p>
+  <h2 class="display section">Free <span class="fire-text">kindling</span></h2>
+  <div class="two">
+    {% if r.llms_txt %}
+    <div class="card">
+      <button class="copy" type="button" data-copy="llms">Copy</button>
+      <h3 style="margin-bottom:6px">Your llms.txt, drafted</h3>
+      <p class="mute" style="margin-bottom:14px;font-size:14px">Save as <code>/llms.txt</code> at the root of the site. Tweak the summary in your own words.</p>
+      <pre class="code" id="llms">{{ r.llms_txt }}</pre>
+    </div>
+    {% endif %}
+    <div class="card">
+      <h3 style="margin-bottom:6px">Articles worth writing</h3>
+      <p class="mute" style="margin-bottom:14px;font-size:14px">Questions customers actually ask AI. Answer one a fortnight, properly, in your voice.</p>
+      <ul class="topics">{% for t in r.topics %}<li>{{ t }}</li>{% endfor %}</ul>
+    </div>
+  </div>
+</section>
+
+{# ================= PAGES ================= #}
+<section>
+  <p class="kicker">What we crawled</p>
+  <h2 class="display section">Pages</h2>
+  <div class="card scroll-x">
+    <table class="pages">
+      <thead><tr><th>Page</th><th>Title</th><th>Words</th><th>Schema</th></tr></thead>
+      <tbody>{% for p in r.pages %}
+        <tr><td>{{ p.url }}{% if p.noindex %} <span class="chip">noindex</span>{% endif %}</td><td>{{ p.title }}</td><td>{{ p.words }}</td><td class="mute">{{ p.schema }}</td></tr>
+      {% endfor %}</tbody>
+    </table>
+  </div>
+  {% for n in r.notes %}<p class="mute" style="margin-top:10px">{{ n }}</p>{% endfor %}
+</section>
+
+<section class="cta">
+  <p class="kicker">Don't fancy doing it yourself?</p>
+  <h2 class="display">Let's light it <span class="fire-text">properly.</span></h2>
+  <p>{{ agency }} fixes every red item on this report and builds the pages that get you named — by Google and by the AIs.</p>
+  <a class="btn" href="{{ agency_url }}">Talk to {{ agency }} →</a>
+  {% if not standalone %}<a class="btn ghost" style="margin-left:8px" href="{% url 'audits:download' audit.pk %}">Download report</a>{% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  // Score ring + number count up
+  var ring=document.getElementById('ring-fill'), num=document.getElementById('score-num');
+  if(ring && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var target=+ring.dataset.score, start=null;
+    ring.setAttribute('stroke-dasharray','0 553');
+    function step(t){ if(!start) start=t; var k=Math.min(1,(t-start)/1400), e=1-Math.pow(1-k,3), v=Math.round(target*e);
+      ring.setAttribute('stroke-dasharray',(553*v/100)+' 553'); num.textContent=v; if(k<1) requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  }
+  // Filters
+  var btns=document.querySelectorAll('.filters button');
+  btns.forEach(function(b){ b.addEventListener('click', function(){
+    btns.forEach(function(x){x.setAttribute('aria-pressed', x===b)});
+    var f=b.dataset.f;
+    document.querySelectorAll('details.f').forEach(function(d){ d.hidden = !(f==='all' || d.dataset.sev===f); });
+  });});
+  // Open the red ones by default
+  document.querySelectorAll('details.f[data-sev=fail]').forEach(function(d){ d.open=true; });
+  // Copy buttons
+  document.querySelectorAll('[data-copy]').forEach(function(b){ b.addEventListener('click', function(){
+    var t=document.getElementById(b.dataset.copy).textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ b.textContent='Copied ✓'; },
+      function(){ b.textContent='Select & copy'; });
+  });});
+})();
+</script>
+{% endblock %}

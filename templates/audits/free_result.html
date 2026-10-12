@@ -1,0 +1,83 @@
+{% extends "audits/base.html" %}
+{% block title %}{{ r.domain }} scored {{ r.score }}/100 | {{ agency }}{% endblock %}
+{% block content %}
+<div class="rep-head">
+  <p class="kicker">Your free check{% if lead.name %}, {{ lead.name }}{% endif %}</p>
+  <h1 class="display domain">{{ r.domain }}</h1>
+
+  <div class="scoreboard">
+    <div class="ring" role="img" aria-label="Score {{ r.score }} out of 100">
+      <svg viewBox="0 0 200 200">
+        <defs><linearGradient id="fire" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffb020"/><stop offset=".5" stop-color="#ff6a1f"/><stop offset="1" stop-color="#ff3b1f"/></linearGradient></defs>
+        <circle class="track" cx="100" cy="100" r="88" fill="none" stroke-width="16"/>
+        <circle id="ring-fill" cx="100" cy="100" r="88" fill="none" stroke="url(#fire)" stroke-width="16" stroke-linecap="round"
+                stroke-dasharray="{% widthratio r.score 100 553 %} 553" data-score="{{ r.score }}"/>
+      </svg>
+      <div class="num"><b id="score-num">{{ r.score }}</b><span>OUT OF 100</span></div>
+    </div>
+    <div>
+      <p class="kicker">Heat rating</p>
+      <h2 class="display heat fire-text">{{ r.heat }}</h2>
+      <p class="verdict">{{ r.verdict }}</p>
+      <div class="tally">
+        <span class="f">{{ r.counts.fail }} fix now</span>
+        <span class="w">{{ r.counts.warn }} fix soon</span>
+        <span class="p">{{ r.counts.pass }} nailed it</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="cats">
+    {% for key, c in r.categories.items %}
+    <div class="card cat">
+      <div class="top"><h3>{{ c.label }}</h3><span class="s">{% if c.score is not None %}{{ c.score }}{% else %}—{% endif %}</span></div>
+      <div class="meter"><i style="width:{{ c.score|default:0 }}%"></i></div>
+      <p>{{ c.blurb }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% if r.top_fixes %}
+<section>
+  <p class="kicker">The big ones</p>
+  <h2 class="display section">Your top <span class="fire-text">three</span></h2>
+  <p class="section-sub">The three things costing you the most right now. The full report has the rest, and exactly how to fix each one.</p>
+  <ol class="fixes">
+    {% for f in r.top_fixes|slice:":3" %}
+    <li><div>
+      <span class="sev {{ f.severity }}">{% if f.severity == "fail" %}Fix now{% else %}Fix soon{% endif %}</span>
+      <h3 style="margin-top:10px">{{ f.title }}</h3>
+      <p>{{ f.detail }}{% if f.why %} {{ f.why }}{% endif %}</p>
+    </div></li>
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}
+
+<section class="cta">
+  <p class="kicker">What happens next</p>
+  <h2 class="display">Your full report is <span class="fire-text">on its way.</span></h2>
+  <p>{{ agency }} will go through your results by hand and email you the full report{% if lead.email %} at <b>{{ lead.email }}</b>{% endif %}
+    within two working days: every finding, why it matters, and how to fix it. No sales pitch, and no obligation.</p>
+  <a class="btn" href="{{ booking_url }}">Want it fixed? Tell me about your project →</a>
+  <a class="btn ghost" style="margin-left:8px" href="{{ agency_url }}">Back to {{ agency }}</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  var ring=document.getElementById('ring-fill'), num=document.getElementById('score-num');
+  if(!ring || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var target=+ring.dataset.score, start=null;
+  ring.setAttribute('stroke-dasharray','0 553');
+  function step(t){ if(!start) start=t; var k=Math.min(1,(t-start)/1400), e=1-Math.pow(1-k,3), v=Math.round(target*e);
+    ring.setAttribute('stroke-dasharray',(553*v/100)+' 553'); num.textContent=v; if(k<1) requestAnimationFrame(step); }
+  requestAnimationFrame(step);
+})();
+</script>
+{% endblock %}

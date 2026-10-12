@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Dragonfire SEO{% endblock %}</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0a0a0c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23ff3b1f' d='M16 2c2 6 9 9 9 17a9 9 0 0 1-18 0c0-5 3-7 4-11 1 3 3 4 3 4s-1-5 2-10z'/%3E%3C/svg%3E">
+  {% include "audits/_styles.html" %}
+</head>
+<body>
+  <canvas id="embers" aria-hidden="true"></canvas>
+  <div class="glow" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <header class="bar">
+      <a class="logo" href="{% if standalone or public_page %}{{ agency_url }}{% else %}{% url 'audits:home' %}{% endif %}">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <defs><linearGradient id="lg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff3b1f"/><stop offset="1" stop-color="#ffb020"/></linearGradient></defs>
+          <path fill="url(#lg)" d="M16 2c2 6 9 9 9 17a9 9 0 0 1-18 0c0-5 3-7 4-11 1 3 3 4 3 4s-1-5 2-10z"/>
+          <path fill="#0a0a0c" d="M16 17c1 2 4 3 4 6a4 4 0 0 1-8 0c0-2 2-3 2-5 1 1 2 1 2-1z"/>
+        </svg>
+        DRAGONFIRE <small>SEO</small>
+      </a>
+      {% if public_page %}
+      <nav class="nav" aria-label="Main"><a href="{{ agency_url }}">← {{ agency }}</a></nav>
+      {% elif not standalone %}
+      <nav class="nav" aria-label="Main">
+        <a href="{% url 'audits:home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}>New torch</a>
+        <a href="{% url 'audits:history' %}" {% if request.resolver_match.url_name == 'history' %}aria-current="page"{% endif %}>History</a>
+        <a href="{% url 'audits:free_check' %}">Free check</a>
+        <a href="{% url 'admin:audits_lead_changelist' %}">Leads</a>
+      </nav>
+      {% endif %}
+    </header>
+
+    {% for m in messages %}<div class="alert" role="alert">{{ m }}</div>{% endfor %}
+
+    <main>{% block content %}{% endblock %}</main>
+
+    <footer>
+      <span>Torched by <b>Dragonfire SEO</b> · built by <a href="{{ agency_url }}">{{ agency }}</a></span>
+      <span>Taken seriously before you say a word.</span>
+    </footer>
+  </div>
+
+  <script>
+  /* Embers: a few hundred sparks drifting up. Pauses when the tab is hidden. */
+  (function(){
+    var c=document.getElementById('embers'); if(!c||matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var x=c.getContext('2d'), W, H, P=[], dpr=Math.min(window.devicePixelRatio||1,2);
+    function size(){W=c.width=innerWidth*dpr;H=c.height=innerHeight*dpr;c.style.width=innerWidth+'px';c.style.height=innerHeight+'px';}
+    function spark(y){return{x:Math.random()*W,y:y==null?H+Math.random()*H*.3:y,r:(Math.random()*1.8+.4)*dpr,
+      v:(Math.random()*.6+.25)*dpr,w:Math.random()*Math.PI*2,h:Math.random()<.5?14:38,a:Math.random()*.6+.2};}
+    size(); addEventListener('resize',size);
+    var n=Math.min(110,Math.round(innerWidth/12)); for(var i=0;i<n;i++)P.push(spark(Math.random()*H));
+    (function tick(){
+      if(!document.hidden){
+        x.clearRect(0,0,W,H);
+        for(var i=0;i<P.length;i++){var p=P[i]; p.y-=p.v; p.w+=.02; p.x+=Math.sin(p.w)*.4*dpr;
+          var fade=Math.min(1,p.y/(H*.6));
+          x.beginPath(); x.fillStyle='hsla('+p.h+',100%,58%,'+(p.a*fade)+')';
+          x.shadowColor='hsla('+p.h+',100%,55%,.9)'; x.shadowBlur=8*dpr;
+          x.arc(p.x,p.y,p.r,0,7); x.fill();
+          if(p.y<-10) P[i]=spark();}
+      }
+      requestAnimationFrame(tick);
+    })();
+  })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

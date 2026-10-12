@@ -1,0 +1,27 @@
+{% extends "audits/base.html" %}
+{% block title %}History · Dragonfire SEO{% endblock %}
+{% block content %}
+<section style="margin-top:30px">
+  <p class="kicker">Every site you've torched</p>
+  <h1 class="display section">History</h1>
+  {% if audits %}
+  <div class="card scroll-x">
+    <table class="pages">
+      <thead><tr><th>Site</th><th>Business</th><th>Score</th><th>Heat</th><th>When</th><th></th></tr></thead>
+      <tbody>
+      {% for a in audits %}
+        <tr>
+          <td>{{ a.domain|default:a.target }}</td><td>{{ a.brand|default:"—" }}</td>
+          <td><b>{{ a.score }}</b></td><td class="fire-text"><b>{{ a.heat }}</b></td>
+          <td class="mute">{{ a.created|date:"j M Y, H:i" }}</td>
+          <td><a href="{% url 'audits:report' a.pk %}">Open →</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="section-sub">Nothing torched yet. <a href="{% url 'audits:home' %}">Light the first one →</a></p>
+  {% endif %}
+</section>
+{% endblock %}
